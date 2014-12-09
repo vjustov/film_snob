@@ -1,15 +1,15 @@
-require_relative "spec_helper"
+# Encoding: utf-8
 
 describe FilmSnob do
   describe "not supported URLs" do
     it "should handle non-supported URLs gracefully" do
       snob = FilmSnob.new("http://hardscrabble.net")
-      expect(snob).to_not be_watchable
+      expect(snob).to_not be_embeddable
     end
 
     it "should raise an exception if you push your luck" do
       snob = FilmSnob.new("http://hardscrabble.net")
-      expect(snob).to_not be_watchable
+      expect(snob).to_not be_embeddable
       expect { snob.id }.to raise_error(FilmSnob::NotSupportedURLError)
     end
   end
@@ -17,7 +17,7 @@ describe FilmSnob do
   describe "YouTube URLs" do
     it "should parse normal YouTube URLs" do
       snob = FilmSnob.new("https://www.youtube.com/watch?v=7q5Ltr0qc8c")
-      expect(snob).to be_watchable
+      expect(snob).to be_embeddable
       expect(snob.id).to eq "7q5Ltr0qc8c"
       expect(snob.site).to eq :youtube
       VCR.use_cassette("youtube/billy") do
@@ -27,7 +27,7 @@ describe FilmSnob do
 
     it "should parse YouTube URLs with dashes" do
       snob = FilmSnob.new("https://www.youtube.com/watch?v=xa-KBqOFgDQ")
-      expect(snob).to be_watchable
+      expect(snob).to be_embeddable
       expect(snob.id).to eq "xa-KBqOFgDQ"
       expect(snob.site).to eq :youtube
     end
@@ -35,7 +35,7 @@ describe FilmSnob do
     it "should parse YouTube URLs with underscores" do
       # first video I could find with an underscore
       snob = FilmSnob.new("https://www.youtube.com/watch?v=HPR3PB_VGVs")
-      expect(snob).to be_watchable
+      expect(snob).to be_embeddable
       expect(snob.id).to eq "HPR3PB_VGVs"
       expect(snob.site).to eq :youtube
     end
@@ -84,6 +84,16 @@ describe FilmSnob do
       expect(snob.id).to eq "16010689"
       expect(snob.site).to eq :vimeo
       expect(snob.clean_url).to eq "https://vimeo.com/16010689"
+    end
+
+    it "should parse staff picks vimeo URLs" do
+      snob = FilmSnob.new("http://vimeo.com/channels/staffpicks/58511112")
+      expect(snob.id).to eq "58511112"
+      expect(snob.site).to eq :vimeo
+      expect(snob.clean_url).to eq "https://vimeo.com/58511112"
+      VCR.use_cassette("vimeo/staff") do
+        expect(snob.title).to eq "DANGER ISLAND"
+      end
     end
 
     it "should parse couchmode vimeo URLs" do
@@ -196,19 +206,19 @@ describe FilmSnob do
     end
     it "should handle https urls" do
       film = FilmSnob.new("https://instagram.com/p/otxnbOocqJ/")
-      expect(film).to be_watchable
+      expect(film).to be_embeddable
       expect(film.site).to eq :instagram
       expect(film.id).to eq "otxnbOocqJ"
     end
     it "should handle instagr.am urls" do
       film = FilmSnob.new("http://instagr.am/p/otxnbOocqJ/")
-      expect(film).to be_watchable
+      expect(film).to be_embeddable
       expect(film.site).to eq :instagram
       expect(film.id).to eq "otxnbOocqJ"
     end
     it "should handle https instagr.am urls" do
       film = FilmSnob.new("https://instagr.am/p/otxnbOocqJ/")
-      expect(film).to be_watchable
+      expect(film).to be_embeddable
       expect(film.site).to eq :instagram
       expect(film.id).to eq "otxnbOocqJ"
     end
@@ -228,6 +238,31 @@ describe FilmSnob do
       expect(film.site).to eq :coub
       VCR.use_cassette "coub/voodoo_people" do
         expect(film.title).to eq "voodoo people"
+        expect { film.html }.not_to raise_error
+      end
+    end
+  end
+
+  describe "Vine" do
+    it "should parse URLs" do
+      film = FilmSnob.new("https://vine.co/v/1")
+      expect(film.id).to eq "1"
+      expect(film.site).to eq :vine
+      VCR.use_cassette "vine/dom hofman" do
+        expect(film.title).to eq "Dom Hofmann's post on Vine"
+        expect { film.html }.not_to raise_error
+      end
+    end
+  end
+
+  describe "rutube URLs" do
+    it "should parse rutube URLs" do
+      url = "http://rutube.ru/video/586afc0f5c652439a2dca8b34d19a086/"
+      film = FilmSnob.new(url)
+      expect(film.id).to eq "586afc0f5c652439a2dca8b34d19a086"
+      expect(film.site).to eq :rutube
+      VCR.use_cassette "rutube/rabbit_eat_raspberry" do
+        expect(film.title).to eq "Кролик ест малину"
         expect { film.html }.not_to raise_error
       end
     end

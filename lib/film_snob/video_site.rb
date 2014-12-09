@@ -4,7 +4,7 @@ require "json"
 class FilmSnob
   class VideoSite
     attr_reader :url, :options
-    def initialize(url, options)
+    def initialize(url, options = {})
       @url = url
       @options = options
     end
@@ -15,6 +15,15 @@ class FilmSnob
 
     def site
       @site ||= self.class.to_s.split("::").last.downcase.to_sym
+    end
+
+    SUBCLASSES = []
+    def self.inherited(base)
+      SUBCLASSES << base
+    end
+
+    def self.subclasses
+      SUBCLASSES
     end
 
     def self.valid_url_patterns
